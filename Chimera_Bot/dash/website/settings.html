@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Chimera | Dashboard</title>
+        <link rel="stylesheet" type="text/css" href="main.css">
+        <script src="lib/login.js"></script>
+        <script src="lib/dashboard.js"></script>
+        <script src="lib/userInfo.js"></script>
+    </head>
+    <body>
+        <div class="background">
+            <div class="animated-circle"></div>
+            <div class="animated-circle" style="animation-delay: 1s;"></div>
+            <div class="animated-circle" style="animation-delay: 2s;"></div>
+            <div class="animated-circle" style="animation-delay: 3s;"></div>
+            <div class="animated-circle" style="animation-delay: 4s;"></div>
+            <div class="animated-circle" style="animation-delay: 5s;"></div>
+            <div class="animated-circle" style="animation-delay: 6s;"></div>
+            <div class="animated-circle" style="animation-delay: 7s;"></div>
+            <div class="animated-circle" style="animation-delay: 8s;"></div>
+            <div class="animated-circle" style="animation-delay: 9s;"></div>
+            <div class="wave-container">
+                <div class="waves">
+                    <div class="wave-1"></div>
+                    <div class="wave-2"></div>
+                    <div class="wave-3"></div>
+                    <div class="wave-bottom"></div>
+                </div>
+            </div>
+            <div class="background-purple"></div>
+            <div class="background-green"></div>
+        </div>
+
+        <header>
+            <div class="logo-container">
+                <h1>Chimera X </h1>
+                <img src="images/discord-logo.png" class="discord-logo">
+            </div>
+            <div class="logout-button-container" id="logout-button" style="display: none;"> 
+                <button class="logout-button" onclick="logout('settings')" type="button">Logout</button>
+            </div>
+            <div class="logout-button-container" id="login-button" style="display: none;">
+                <button class="logout-button" onclick="login()" type="button">Login</button>
+            </div>
+            <div class="head">
+                <div class="user-info-container">
+                    <div id="user-info" style="display: none;">
+                        <div class="user-info">
+                            <img id="user-avatar" src="">
+                            <p id="username">username#discriminator</p>
+                        </div>
+                    </div>
+                    <div id="user-info-fallback" style="display: none;">
+                        <div class="user-info">
+                            <p>Login to access your dashboard</p>
+                        </div>
+                    </div>
+                </div>
+                <nav>
+                    <ul>
+                        <li>
+                            <a href="index.html">
+                                <div class="nav-option-container-animated">
+                                    <div class="align-nav-option">
+                                        <p>Home</p>
+                                    </div>
+                                    <div class="align-nav-option">
+                                        <div class="nav-underline-animated"></div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="settings.html">
+                                <div class="nav-option-container-static">
+                                    <div class="align-nav-option">
+                                        <p>Dashboard</p>
+                                    </div>
+                                    <div class="align-nav-option">
+                                        <div class="nav-underline"></div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="index.html">
+                                <div class="nav-option-container-animated">
+                                    <div class="align-nav-option">
+                                        <p>Donate</p>
+                                    </div>
+                                    <div class="align-nav-option">
+                                        <div class="nav-underline-animated"></div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="index.html">
+                                <div class="nav-option-container-animated">
+                                    <div class="align-nav-option">
+                                        <p>Library</p>
+                                    </div>
+                                    <div class="align-nav-option">
+                                        <div class="nav-underline-animated"></div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="index.html">
+                                <div class="nav-option-container-animated">
+                                    <div class="align-nav-option">
+                                        <p>Develop</p>
+                                    </div>
+                                    <div class="align-nav-option">
+                                        <div class="nav-underline-animated"></div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="index.html">
+                                <div class="nav-option-container-animated">
+                                    <div class="align-nav-option">
+                                        <p>About</p>
+                                    </div>
+                                    <div class="align-nav-option">
+                                        <div class="nav-underline-animated"></div>
+                                    </div>
+                                </div>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div> 
+        </header>
+
+        <div class="unsaved-changes-message" id="unsaved-changes-message" >
+            <p>You have unsaved changes!</p>
+            <button onclick="saveGuildData()" type="button">Save</button>
+        </div>
+
+        <div class="success-message" id="success-message">
+            <div class="error-message-wrapper">
+                <p>Guild settings saved successfully!</p>
+                <div class="expand-button" id="success-close-button" onclick="closeSuccess()">
+                    <p>[Close]</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="error-message" id="error-message" >
+            <div class="error-message-wrapper">
+                <p>There was an error saving your settings!</p>
+                
+                <div class="expand-button" id="error-expand-button" onclick="expandErrors()">
+                    <p>[Expand]</p>
+                </div>
+                <div class="expand-button" id="error-collapse-button" onclick="collapseErrors()" style="display: none;">
+                    <p>[Collapse]</p>
+                </div>
+                <div class="expand-button" id="error-close-button" onclick="closeErrors()">
+                    <p>[Close]</p>
+                </div>
+            </div>
+            
+            <div class ="error-container" id="error-container"></div>
+        </div>
+
+        <div class="module-pannel-container" id="module-pannel-container" style="display: none;">
+            <div class="module-pannel-content">
+                <a href="#" style="text-decoration: none;"><h2 class="module-pannel-title">Modules</h2></a>
+                <div class="horizontal-line" style="margin-top: 25px;"><div></div></div>
+
+                <div class="module-list" id="module-list">
+                    <!-- <a class="module-list-link" href="#test">
+                        <h3 class="module-list-name">Test Module</h3>
+                        <div class="module-link-underline"></div>
+                    </a> -->
+                </div>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <div id="dashboard" style="display: none;">
+                <div class="guild-selector-container">
+                    <h3>Server:</h3>
+                    <select class="guild-select" id="guilds" onchange="guildChanged()"></select>
+                </div>
+
+                <div style="display: flex; justify-content: center; align-items: flex-start;">
+                    <div style="padding: 10px; margin-right: 150px;">
+                        <label for="prefix-field" class="prefix-label">Prefix:</label>
+                        <input class="prefix-input" id="prefix-field" placeholder="!$%&*" minlength="1" maxlength="1" type="text" pattern="[!$%^&-+=|]{0,1}" onchange="flagChanges()">
+                    </div>
+                
+                    <div class="module-controls" id="module-controls">
+
+                        <label for="install-field">Module: </label>
+                        <input type="text" id="install-field">
+    
+                        <div class="roles-buttons">
+                            <button onclick="installModule()" type="button">Install</button>
+                            <button onclick="uninstallModule()" type="button">Uninstall</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="horizontal-line">
+                    <div></div>
+                </div>
+                
+                <div class="commands-container" id="commands-container">
+                    <!-- <div class="command-module-group" id="test-command-module">
+                        <h3 class="command-module-title">Test Module</h3>
+                        <div class="command-module-wrapper">
+                            <div class="command-group" id="test-command-group">
+                                <label for="test-command" class="command-group-label">test.command</label>
+
+                                <input type="checkbox" id="test-command-admin"></input>
+                                <label for="test-command-admin" class="command-admin-label">Admin?</label>
+
+                                <label for="test-command-roles">Roles: </label>
+                                <input type="text" id="test-command-role">
+
+                                <div class="roles-buttons">
+                                    <button onclick="addCommandRole('test.command')" type="button">Add</button>
+                                    <button onclick="removeCommandRole('test.command')" type="button">Remove</button>
+                                </div>
+
+                                <p class="command-role-list">test, test, test-test</p>
+                            </div>
+                        </div>
+                    </div> -->
+                </div>
+            </div>
+        </div>
+       
+    </body>
+</html>
