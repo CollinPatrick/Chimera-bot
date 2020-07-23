@@ -9,11 +9,10 @@ const port = process.env.PORT;
 var app = express(), 
 server = require('http').createServer(app);
 var cors = require('cors');
-//io = io.listen(server);;
 
 app.use("/site", express.static(path.join(__dirname, "../website")));
 app.use(cors({
-	origin: 'http://chimerabot.net'
+	origin: ['http://chimerabot.net', `localhost:${port}`]
 }))
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));

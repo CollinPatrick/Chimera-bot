@@ -1,4 +1,4 @@
-var root = "http://137.220.51.242:80";
+var root = "http://localhost:3001";
 var modulePannel;
 var moduleList;
 var unsavedChangesFlag = false;

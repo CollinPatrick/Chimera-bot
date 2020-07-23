@@ -1,4 +1,4 @@
-var root = "http://137.220.51.242:80"
+var root = "localhost:3001"
 
 document.addEventListener("DOMContentLoaded", function(){
     displayUserInfo();
