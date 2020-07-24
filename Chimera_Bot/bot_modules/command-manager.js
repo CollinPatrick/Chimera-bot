@@ -50,7 +50,7 @@ module.exports = {
         console.log((() => {
             var temp = "Module Library:\n";
             this.moduleLibrary.forEach(module =>{
-                temp += `> ${module.settings.moduleName}\n`;
+                temp += `> ${module.package.moduleName}\n`;
             });
             return temp;
         })());
@@ -69,7 +69,7 @@ module.exports = {
         console.log((() => {
             var temp = "Module Library:\n";
             moduleLibrary.forEach(module =>{
-                temp += `> ${module.settings.moduleName}\n`;
+                temp += `> ${module.package.moduleName}\n`;
             });
             return temp;
         })());
@@ -131,6 +131,42 @@ module.exports = {
             return;
         }
 
+        //Check module's channel white/black list
+        let messageChannel = message.channel.name;
+        if(messageChannel !== guildSettings.settings["Manager"].consoleChannel){
+            let listType = guildSettings.settings[moduleToExecute].listType;
+            let channelList = guildSettings.settings[moduleToExecute].channelList
+            let allowed = false;
+            switch(listType){
+                case "none":
+                    return;
+
+                case "white":
+                    for(channel in channelList){
+                        if(channelList[channel] === messageChannel){
+                            allowed = true;
+                        }
+                    }
+                    if(allowed) break;
+
+                    return;
+
+                case "black":
+                    allowed = true;
+                    for(channel in channelList){
+                        if(channelList[channel] === messageChannel){
+                            allowed = false;
+                        }
+                    }
+                    if(allowed) break;
+
+                    return;
+                
+                default:
+                    return;
+            }
+        }
+
         //Get command module
         let module = this.GetModule(moduleToExecute);
 
@@ -140,17 +176,19 @@ module.exports = {
         {
             if(guildSettings.commands[command].parentModule === moduleToExecute)
             {
+                //commandName = command.substring(command.indexOf(".")+1, command.length);
                 commands[command] = guildSettings.commands[command];
             }
         }
 
         //Not manager - run command with module settings
-        if(moduleToExecute !== ModuleManager.settings.moduleName)
+        if(moduleToExecute !== ModuleManager.package.moduleName)
         {
             //Build module specific settings
             let moduleSettings = {
                 settings: guildSettings.settings[moduleToExecute],
                 commands: commands,
+                defGroup: guildSettings.packages[moduleToExecute].defGroup,
                 prefix: guildSettings.prefix
             }
 
@@ -162,7 +200,7 @@ module.exports = {
                 //Only module settings get saved. Command and prefix settings are changed using the manager module
                 //This is to prevent modules from overwriting guild settings or other module settings
                 guildSettings.settings[moduleToExecute] = updatedSettings.settings;
-                DataBus.SaveGuildSettings(guildSettings)
+                DataBus.SaveGuildSettings(guildSettings);
             }
         }
         else //Is manager - run command with full guild settings
@@ -183,28 +221,34 @@ module.exports = {
     {   
         //Get default manager settings
         let settings = {};
-        settings[ModuleManager.settings.moduleName] = ModuleManager.settings;
+        settings[ModuleManager.package.moduleName] = ModuleManager.settings;
+        //Add whitelist options to settings
+        settings[ModuleManager.package.moduleName]["listType"] = "none"; //List types "white", "black", "none"
+        settings[ModuleManager.package.moduleName]["channelList"] = [];
         settings = JSON.stringify(settings);
 
         //Get manager commands and set their parent module
         var commands = ModuleManager.commands;
+        var genCommands = {};
         for(let command in commands)
         {
+            let commandName = `${ModuleManager.package.defGroup}.${command}`;
+            genCommands[commandName] = commands[command];
             //console.log(command);
-            commands[command]["parentModule"] = ModuleManager.settings.moduleName;
-            //commands[command] = command;
+            genCommands[commandName]["parentModule"] = ModuleManager.package.moduleName;
         }
-        commands = JSON.stringify(commands);
+        genCommands = JSON.stringify(genCommands);
         
         //Create and add manager to module list
-        let modules = {modules:[ModuleManager.settings.moduleName]};
-        modules = JSON.stringify(modules);
+        let packages = {};
+        packages[ModuleManager.package.moduleName] = ModuleManager.package;
+        packages = JSON.stringify(packages);
 
         //Set defualt prefix
         let prefix = '!';
 
         //Create guild settings entry for guild
-        DataBus.database.query(`INSERT INTO guildSettings(id, settings, commands, modules, prefix) VALUES('${guildID}', '${settings}', '${commands}', '${modules}', '${prefix}')`);
+        DataBus.database.query(`INSERT INTO guildSettings(id, settings, commands, packages, prefix) VALUES('${guildID}', '${settings}', '${genCommands}', '${packages}', '${prefix}')`);
 
         let guildSettings = await DataBus.GetGuildSettings(guildID);
 
@@ -226,7 +270,7 @@ module.exports = {
         for(let i = 0; i < this.moduleLibrary.length; i++) //always returns null without normal for loop. Don't know why
         {
             //Check if supplied module name matches library module
-            if(this.moduleLibrary[i].settings.moduleName === moduleName)
+            if(this.moduleLibrary[i].package.moduleName === moduleName)
             {
                 //return deep copy of module without functions
                 return JSON.parse(JSON.stringify(this.moduleLibrary[i]));
@@ -238,10 +282,10 @@ module.exports = {
 
     GetModule: function(moduleName)
     {
-        for(let i = 0; i < this.moduleLibrary.length; i++) //always returns null without normal for loop. Don't know why
+        for(let i = 0; i < this.moduleLibrary.length; i++)
         {
             //Check if supplied module name matches library module
-            if(this.moduleLibrary[i].settings.moduleName === moduleName)
+            if(this.moduleLibrary[i].package.moduleName === moduleName)
             {
                 //return module
                 return this.moduleLibrary[i];
@@ -264,7 +308,7 @@ module.exports = {
         }
 
         //check if requested module is already installed
-        if(settings.settings[moduleToInstall.settings.moduleName])
+        if(settings.settings[moduleToInstall.package.moduleName])
         {
             //Throw err - module already installed
             console.log("Module already installed")
@@ -274,19 +318,28 @@ module.exports = {
         let guildSettings = settings;
 
         //Add module settings
-        guildSettings.settings[moduleToInstall.settings.moduleName] = moduleToInstall.settings;
+        guildSettings.settings[moduleToInstall.package.moduleName] = moduleToInstall.settings;
+
+        //Add whitelist options to settings
+        guildSettings.settings[moduleToInstall.package.moduleName]["listType"] = "none"; //List types "white", "black", "none"
+        guildSettings.settings[moduleToInstall.package.moduleName]["channelList"] = [];
 
         //Add module commands
         var moduleCommands = moduleToInstall.commands;
+        var genCommands = {};
         for(let command in moduleCommands)
         {
+            let commandName = `${moduleToInstall.package.defGroup}.${command}`;
+            genCommands[commandName] = moduleCommands[command];
             //console.log(command);
-            moduleCommands[command]["parentModule"] = moduleToInstall.settings.moduleName;
-            guildSettings.commands[command] = moduleCommands[command];
+            genCommands[commandName]["parentModule"] = moduleToInstall.package.moduleName;
+
+            //console.log(command);
+            guildSettings.commands[commandName] = genCommands[commandName];
         }
 
         //Add module to module list
-        guildSettings.modules.modules.push(moduleToInstall.settings.moduleName);
+        guildSettings.packages[moduleToInstall.package.moduleName] = moduleToInstall.package;
 
         //Save new settings
         EventHandler.commonEmitter.emit("SaveGuildSettings", guildSettings);
@@ -296,16 +349,25 @@ module.exports = {
     {
         console.log(`Uninstalling ${moduleName}`);
         //check if requested module is module manager
-        if(moduleName === ModuleManager.settings.moduleName)
+        if(moduleName === ModuleManager.package.moduleName)
         {   
             console.log("You cannot uninstall module manager!");
             return;
         }
 
-        //check if requested module is installed
-        if(!settings.modules.modules.includes(moduleName))
+
+        //check if requested module is installed, delete if found
+        let foundPkg = false;
+        for(let package in settings.packages)
         {
-            //THROW ERROR - module not installed
+            if(settings.packages[package]["moduleName"] === moduleName)
+            {
+                foundPkg = true;
+                delete settings.packages[package];
+            }
+        }
+
+        if(!foundPkg){
             console.log("Module not installed!");
             return;
         }
@@ -321,11 +383,6 @@ module.exports = {
                 delete settings.commands[command];
             }
         }
-
-        //remove module from array of installed modules
-        let index = settings.modules.modules.indexOf(moduleName);
-        settings.modules.modules.splice(index,1);
-        //delete settings.modules.modules[moduleName];
 
         //save new settings
         EventHandler.commonEmitter.emit("SaveGuildSettings", settings);

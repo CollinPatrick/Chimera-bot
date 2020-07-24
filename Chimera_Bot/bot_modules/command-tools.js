@@ -163,6 +163,28 @@ module.exports = {
         }
     },
 
+    CreateWhitelistField: function(settings)
+    {
+        listType = settings.listType;
+        channels = settings.listChannels;
+
+        if(listType === "none"){
+            listType = "Console Only:"
+            channels = settings.consoleChannel;
+        }
+        else if(listType === "white"){
+            listType = "Whitelist:"
+        }
+        else if(listType === "black"){
+            listType = "Blacklist:"
+        }
+
+        return {
+            name: listType,
+            value: channels
+        }
+    },
+
     CreateCustomField: function(title, description)
     {
         return {
@@ -171,17 +193,17 @@ module.exports = {
         }
     },
 
-    HelpBuilder: function(moduleName, description, fields)
+    HelpBuilder: function(package, fields)
     {
         return {
             embed: {
                 color: 3447003,
                 author: {
-                    name: moduleName,
+                    name: `Help`,
                     icon_url: 'attachment://thumbnail.png'
                 },
-                title: moduleName,
-                description: description,
+                title: package.moduleName,
+                description: "v" + package.version + "\n" + package.description,
                 fields: fields,
             },
             files: [{

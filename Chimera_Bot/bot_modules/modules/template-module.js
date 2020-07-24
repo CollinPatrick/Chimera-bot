@@ -1,18 +1,19 @@
 const cmdTools = require('../command-tools.js'); //A collection of common tools to help streamline command interactions
+const { set } = require('lodash');
 
 module.exports = {
     //List all commands for this module here and their defuault permissions
     //Make sure all commands are unique
     commands : {    
-        "template.ping" : {
-            admin : false, //User must have admin to use this command
-            roles : [] //User must have role(s) to use this command
+        "ping" : {
+            admin : false, //User must have admin to use this command. 
+            roles : [] //User must have role(s) to use this command. Leave empty by default
         },
-        "template.setresponse" : {
+        "setresponse" : {
             admin : true,
             roles : []
         },
-        "template.help" : {
+        "help" : {
             admin : false,
             roles : []
         },
@@ -27,16 +28,29 @@ module.exports = {
         resonse: "pong"
     },
 
+    //These are required fields that describe this module and are used for insallation and updating the module
+    package : {
+        moduleName: "Template",     //This is the name of the module and will never change
+        version: "1.0.0",   //If this number changes, the module will update
+        author: "Collin Patrick",   
+        description: "This module is a template example for creating new modules.",
+        defGroup: "tmp",    //This is the default group identifier for this command EX: "tpl.help"
+        whatsNew: ""    //This is sent to server owners when the module updates
+    },
+
     //This is called when a requested command matches this module.
     Run: async function(message, command, settings)
     {
-        switch (command) {
-            case "template.ping":
+        //Remove defGroup from command
+        let cmd = command.substring(command.indexOf(".")+1, command.length);
+        
+        switch (cmd) {
+            case "ping":
                 //functionality for this command
                 return this.DoSomething(message, settings);
-            case "template.setresponse":
+            case "setresponse":
                 return this.SetResponse(message, settings);
-            case "template.help":
+            case "help":
                 return this.Help(message, settings);
         }
     },
@@ -46,12 +60,11 @@ module.exports = {
     Help: async function(message, settings)
     {
         message.channel.send(
-            cmdTools.HelpBuilder(this.settings.moduleName, 
-                "This module is a template example for creating new modules.",
+            cmdTools.HelpBuilder(this.package, 
                 [
-                    cmdTools.CreateCommandField(settings.prefix, settings, "template.ping", "", "Make me respond with a preset message."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "template.setresponse", "[response]", `Set my response for ${settings.prefix}template.ping.`),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "template.help", "", "Get help for only this module."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${settings.defGroup}.ping`, "", "Make me respond with a preset message."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${settings.defGroup}.setresponse`, "[response]", `Set my response for ${settings.prefix}template.ping.`),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${settings.defGroup}.help`, "", "Get help for only this module."),
                 ]
             )
         );
@@ -66,7 +79,7 @@ module.exports = {
     //if fail, add array with all errors, these errors will appear on the dashboard
     /*
         return example = {
-            status: "rejected",
+            status: "fail",
             errors: [
                 "error 1",
                 "error 2",

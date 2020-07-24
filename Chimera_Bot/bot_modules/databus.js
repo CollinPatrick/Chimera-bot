@@ -20,7 +20,7 @@ module.exports = {
         this.database.connect(err => {
             if (err) throw err;
             console.log("Connected to database!");
-            this.database.query("CREATE TABLE IF NOT EXISTS guildSettings (id varchar(30) NOT NULL, settings JSON NOT NULL, commands JSON NOT NULL, modules JSON NOT NULL, prefix char(1) NOT NULL DEFAULT '!')");
+            this.database.query("CREATE TABLE IF NOT EXISTS guildSettings (id varchar(30) NOT NULL, settings JSON NOT NULL, commands JSON NOT NULL, packages JSON NOT NULL, prefix char(1) NOT NULL DEFAULT '!')");
         });
     },
 
@@ -57,7 +57,7 @@ module.exports = {
                 guildSettings["id"] = rows[0].id;
                 guildSettings["settings"] = JSON.parse(rows[0].settings);
                 guildSettings["commands"] = JSON.parse(rows[0].commands);
-                guildSettings["modules"] = JSON.parse(rows[0].modules);
+                guildSettings["packages"] = JSON.parse(rows[0].packages);
                 guildSettings["prefix"] = rows[0].prefix;
 
                 return err ? reject(err) : resolve(guildSettings);
@@ -93,7 +93,7 @@ module.exports = {
 
         let settings = JSON.stringify(guildSettings["settings"]);
         let commands = JSON.stringify(guildSettings["commands"]);
-        let modules = JSON.stringify(guildSettings["modules"]);
+        let packages = JSON.stringify(guildSettings["packages"]);
         let prefix = guildSettings["prefix"];
 
         this.database.query(`SELECT * FROM guildSettings WHERE id = '${guildSettings["id"]}'`, (err, rows) =>
@@ -103,7 +103,7 @@ module.exports = {
             this.database.query(`UPDATE guildSettings SET 
                                 settings = '${settings}', 
                                 commands = '${commands}', 
-                                modules = '${modules}', 
+                                packages = '${packages}', 
                                 prefix = '${prefix}' 
                                 WHERE id = '${guildSettings["id"]}'`);
 

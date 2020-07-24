@@ -1,5 +1,5 @@
-const cmdTools = require('../command-tools.js');
-const EventHandler = require('../event-handler.js');
+const cmdTools = require('./command-tools.js');
+const EventHandler = require('./event-handler.js');
 //var commonEmitter = EventHandler.commonEmitter;
 
 module.exports = {

@@ -1,4 +1,5 @@
 const cmdTools = require('./command-tools.js');
+const { cond } = require('lodash');
 
 module.exports = {
 
@@ -10,63 +11,63 @@ module.exports = {
             admin : true, //Applies to only this command.
             roles : [], //stacks onto parent list for only this command
         },
-        "manager.setconsolechannel" : {
+        "setconsolechannel" : {
             admin : true,
             roles : [], 
         },
-        "manager.setup" : {
+        "setup" : {
             admin : false,
             roles : [], 
         },
-        "manager.listmodules" : {
+        "listmodules" : {
             admin : false,
             roles : [], 
         },
-        "manager.installmodule" : {
+        "installmodule" : {
             admin : true,
             roles : [], 
         },
-        "manager.uninstallmodule" : {
+        "uninstallmodule" : {
             admin : true,
             roles : [], 
         },
-        "manager.setmoduleadmin": {
+        "setmoduleadmin": {
             admin : true,
             roles : [], 
         },
-        "manager.setcommandadmin": {
+        "setcommandadmin": {
             admin : true,
             roles : [], 
         },
-        "manager.addmodulerole": {
+        "addmodulerole": {
             admin : true,
             roles : [], 
         },
-        "manager.removemodulerole": {
+        "removemodulerole": {
             admin : true,
             roles : [], 
         },
-        "manager.clearmoduleroles": {
+        "clearmoduleroles": {
             admin : true,
             roles : [], 
         },
-        "manager.addcommandrole": {
+        "addcommandrole": {
             admin : true,
             roles : [], 
         },
-        "manager.removecommandrole": {
+        "removecommandrole": {
             admin : true,
             roles : [], 
         },
-        "manager.clearcommandroles": {
+        "clearcommandroles": {
             admin : true,
-            roles : [], 
-        },
-        "manager.help" : {
-            admin : false,
             roles : [], 
         },
         "help" : {
+            admin : false,
+            roles : [], 
+        },
+        "helpall" : {
             admin : true,
             roles : [], 
         },
@@ -74,55 +75,65 @@ module.exports = {
 
     //This objet is used for saving module specific data
     settings : {
-        moduleName: "Manager",
+        //moduleName: "Manager",
         consoleChannel: "bot-console",
+    },
+
+    package : {
+        moduleName: "Manager",
+        version: "1.0.0",
+        author: "Collin Patrick",   
+        description: "This module contains my core commands and utility setup.",
+        defGroup: "mgr",
+        whatsNew: ""
     },
 
     /////////////Module Functions/////////////
     Run: async function(message, command, settings)
     {
-        switch (command) {
+        cmd = command.substring(command.indexOf(".")+1, command.length)
+        switch (cmd) {
             case "forcesave":
                 
                 break;
-            case "manager.setconsolechannel":
+            case "setconsolechannel":
                 
                 break;
-            case "manager.setup":
+            case "setup":
                 
                 break;
-            case "managerlistmodules":
+            case "listmodules":
                 return this.ListModules(message, settings);
-            case "manager.installmodule":
+            case "installmodule":
                 
                 break;
-            case "manager.uninstallmodule":
+            case "uninstallmodule":
                 
                 break;
-            case "manager.setmoduleadmin":
+            case "setmoduleadmin":
                 
                 break;
-            case "manager.addmodulerole":
+            case "addmodulerole":
                 
                 break;
-            case "manager.removemodulerole":
+            case "removemodulerole":
                    
                 break;
-            case "manager.clearmoduleroles":
+            case "clearmoduleroles":
                    
                 break;
-            case "manager.addcommandrole":
+            case "addcommandrole":
                 
                 break;
-            case "manager.removecommandrole":
+            case "removecommandrole":
                 
                 break;
-            case "manager.clearcommandroles":
+            case "clearcommandroles":
                 
                 break;
-            case "manager.help":
-                return this.Help(message, settings);
             case "help":
+                return this.Help(message, settings);
+            case "helpall":
                 return this.HelpAll(message, settings);
         }
     },
@@ -141,29 +152,27 @@ module.exports = {
     Help: async function(message, settings)
     {
         let commands = settings.commands;
-
-        message.channel.send(
-            cmdTools.HelpBuilder(this.settings.moduleName, 
-                "This module contains my core commands and utility setup.",
+        let groupId = settings.packages[this.package.moduleName].defGroup;
+        message.channel.send(cmdTools.HelpBuilder(this.package,
                 [
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.setup", "", "Get instructions to set me up on a new server."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.setconsolechannel", "[channel]", "Set my default commands channel. This channel is only intended for server admins and mods. All modules will have access to this channel."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.listmodules", "", "See the full list of my installed modules."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.installmodule", "[module]", "Install a new module for access to more commands."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.uninstallmodule", "[module]", "Uninstall a module. This will delete any saved data for this module."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.setmoduleadmin", "[module] [true/false]", "Set required admin permissions for all commands in a module."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.setcommandadmin", "[true/false]", "Set required admin permissions for an individual command."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.addmodulerole", "[module] [role]", "Add a required role to use all commands in a module."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.removemodulerole", "[module] [role]", "Remove a required role to use all commands in a module."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.clearmoduleroles", "[module]", "Clears all required roles for all commands within a module."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.addcommandrole", "[role]", "Add a required role to use a command."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.removecommandrole", "[role]", "Remove a required role to use a command."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.clearcommandroles", "[command]", "Clears all required roles to to use a command."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, "manager.help", "", "Get help for this module."),
+                    cmdTools.CreateWhitelistField(settings.settings[this.package.moduleName]),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.setup`, "", "Get instructions to set me up on a new server."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.setconsolechannel`, "[channel]", "Set my default commands channel. This channel is only intended for server admins and mods. All modules will have access to this channel."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.listmodules`, "", "See the full list of my installed modules."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.installmodule`, "[module]", "Install a new module for access to more commands."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.uninstallmodule`, "[module]", "Uninstall a module. This will delete any saved data for this module."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.setmoduleadmin`, "[module] [true/false]", "Set required admin permissions for all commands in a module."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.setcommandadmin`, "[true/false]", "Set required admin permissions for an individual command."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.addmodulerole`, "[module] [role]", "Add a required role to use all commands in a module."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.removemodulerole`, "[module] [role]", "Remove a required role to use all commands in a module."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.clearmoduleroles`, "[module]", "Clears all required roles for all commands within a module."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.addcommandrole`, "[role]", "Add a required role to use a command."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.removecommandrole`, "[role]", "Remove a required role to use a command."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.clearcommandroles`, "[command]", "Clears all required roles to to use a command."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.help`, "", "Get help for this module."),
 
                 ]
-            )
-        );
+            ));
 
         return null;
     },
@@ -210,9 +219,9 @@ module.exports = {
         cmdTools.SendInfoMessage(message, "Installed modules", (() => {
             let temp = "";
             //let temp =  + this.settings.moduleName + "\n";
-            settings.modules.modules.forEach(module => {
-                temp += "• " + module + "\n";
-            });
+            for(let package in settings.packages){
+                temp += "• " + settings.packages[package].moduleName + " (" + settings.packages[package].defGroup + ")" + "\n";
+            }
             return temp;
         })());
         return null;
