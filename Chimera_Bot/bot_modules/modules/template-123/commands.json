@@ -1,0 +1,14 @@
+{    
+    "ping" : {
+        "admin" : false,
+        "roles" : []
+    },
+    "setresponse" : {
+        "admin" : true,
+        "roles" : []
+    },
+    "help" : {
+        "admin" : false,
+        "roles" : []
+    }
+}

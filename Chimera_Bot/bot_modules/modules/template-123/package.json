@@ -1,0 +1,9 @@
+{
+    "id": "template-123",
+    "moduleName": "Template",
+    "version": "1.0.0",
+    "author": "Your Name",   
+    "description": "This module is a template example for creating new modules.",
+    "defGroup": "tmp",
+    "whatsNew": ""
+}

@@ -1,42 +1,17 @@
-/*
-MySQL table 
-Guild ID, settings, commands, modules, prefix
-
-GuildSettings{
-    settings:{
-        //installed module settings
-        "ModuleName":{
-            //settings
-        },
-    }
-    commands:{
-        //installed module commands
-        "command" : {
-            moduleAdmin: boolean,
-            admin: boolean,
-            moduleRoles: [string]
-            roles: [string],
-            parentModule: string
-        },
-    }
-    modules:[
-        //list of installed modules
-        "ModuleName",
-        "ModuleName",
-    ],
-    prefix : "!",
-}*/ 
 const ModuleManager = require("./module-manager.js");
 const DataBus = require("./databus.js");
 const cmdTools = require("./command-tools.js");
 const fs = require('fs');
 const EventHandler = require("./event-handler.js");
+const { Message, Client } = require("discord.js");
 
 module.exports = {
 
     moduleLibrary: [],
 
-    //populate module library
+    /**
+     * Imports all command modules from the module folder and populates moduleLibrary array
+     */
     PopulateModuleLibrary: function() {
         this.moduleLibrary = [];
         this.moduleLibrary.push(ModuleManager); //Move manager to module folder
@@ -56,6 +31,9 @@ module.exports = {
         })());
     },
 
+    /**
+     * Returns an array of all commnad modules
+     */
     GetModuleLibrary: function(){
         moduleLibrary = [];
         moduleLibrary.push(ModuleManager); //Move manager to module folder
@@ -77,6 +55,11 @@ module.exports = {
         return moduleLibrary;
     },
 
+    /**
+     * The entry point for prefixed messages
+     * @param {Client} client - Discord client
+     * @param {Message} message - Recieved message
+     */
     ReadMessage: async function(client, message)
     {
         let badPrefix = false;
@@ -194,11 +177,11 @@ module.exports = {
 
             //Run command - return object or null
             let updatedSettings = await module.Run(message, command, moduleSettings);
+
             //Changes returned from module
             if(updatedSettings !== null)
             {
-                //Only module settings get saved. Command and prefix settings are changed using the manager module
-                //This is to prevent modules from overwriting guild settings or other module settings
+                //Only module settings get saved. Other settings are changed using the manager module
                 guildSettings.settings[moduleToExecute] = updatedSettings.settings;
                 DataBus.SaveGuildSettings(guildSettings);
             }
@@ -207,10 +190,16 @@ module.exports = {
         {
             //Run command
             let updatedSettings = await module.Run(message, command, guildSettings);
+
             //Changes returned from module
-            if(!updatedSettings === null)
+            if(updatedSettings !== null && updatedSettings !== undefined)
             {
-                database.SaveGuildSettings(updatedSettings);
+                // let validation = await DataBus.ValidateGuildSettings(updatedSettings)
+                // if(validation.status === "success"){
+                //     DataBus.SaveGuildSettings(updatedSettings);
+                // }
+
+                DataBus.SaveGuildSettings(updatedSettings);
             }
         }
 
@@ -247,21 +236,17 @@ module.exports = {
         //Set defualt prefix
         let prefix = '!';
 
-        //Create guild settings entry for guild
+        //Create guild settings entry for guild, TO-DO: Move to databus
         DataBus.database.query(`INSERT INTO guildSettings(id, settings, commands, packages, prefix) VALUES('${guildID}', '${settings}', '${genCommands}', '${packages}', '${prefix}')`);
 
         let guildSettings = await DataBus.GetGuildSettings(guildID);
 
         this.InstallModule("Template", guildSettings);
-        //guildSettings.settings["Echo"].allowedChannels.push("general");
-        //EventHandler.commonEmitter.emit("SaveGuildSettings", guildSettings);
-        //this.UninstallModule("Echo", guildSettings);
-        //this.InstallModule("Echo", guildSettings);
     },
 
     LeaveGuild: function (guildID)
     {
-        //remove guild settings entry for guild
+        //remove guild settings entry for from database TO-DO: Move to databus
         DataBus.database.query(`DELETE FROM guildSettings WHERE id = '${guildID}'`);
     },
 

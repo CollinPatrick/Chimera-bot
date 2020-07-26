@@ -1,23 +1,9 @@
-const cmdTools = require('../command-tools.js'); //A collection of common tools to help streamline command interactions
-const { set } = require('lodash');
+const cmdTools = require('../command-tools.js');
 
 module.exports = {
     //List all commands for this module here and their defuault permissions
     //Make sure all commands are unique
-    commands : {    
-        "ping" : {
-            admin : false, //User must have admin to use this command. 
-            roles : [] //User must have role(s) to use this command. Leave empty by default
-        },
-        "setresponse" : {
-            admin : true,
-            roles : []
-        },
-        "help" : {
-            admin : false,
-            roles : []
-        },
-    },
+    commands : require('./commands.json'),
 
     //List all settings that will need to be saved (per server) for this module
     settings : {
@@ -29,14 +15,7 @@ module.exports = {
     },
 
     //These are required fields that describe this module and are used for insallation and updating the module
-    package : {
-        moduleName: "Template",     //This is the name of the module and will never change
-        version: "1.0.0",   //If this number changes, the module will update
-        author: "Collin Patrick",   
-        description: "This module is a template example for creating new modules.",
-        defGroup: "tmp",    //This is the default group identifier for this command EX: "tpl.help"
-        whatsNew: ""    //This is sent to server owners when the module updates
-    },
+    package : require('./package.json'),
 
     //This is called when a requested command matches this module.
     Run: async function(message, command, settings)
@@ -56,7 +35,7 @@ module.exports = {
     },
 
     //It's generally a good idea to have a help command
-    //[prefix]template.help
+    //Command: help
     Help: async function(message, settings)
     {
         message.channel.send(
@@ -87,16 +66,18 @@ module.exports = {
             ]
         }
     */
-    ValidateSettings: function(settings){ //not implimented
+
+    ValidateSettings: async function(settings){ //not implimented
 
     },
 
     //////////////// COMMAND FUNCTIONS ////////////////
 
     //Sends the preset response to the recieved message channel
-    //[prefix]template.ping
+    //Command: ping
     DoSomething: async function(message, settings)
     {
+        this.ValidateSettings()
         //Send saved response to channel 
         message.channel.send(settings.settings.resonse);
         //return null if no settings were changed
@@ -104,7 +85,7 @@ module.exports = {
     },
 
     //Sets the preset response for the ping command
-    //[prefix]template.setresponse [response]
+    //Command: setresponse [response]
     SetResponse: async function(message, settings)
     {
         //console.log(settings);

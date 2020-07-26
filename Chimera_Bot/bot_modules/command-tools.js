@@ -1,24 +1,32 @@
+const { Message, MessageEmbedField, MessageEmbed, Channel } = require("discord.js");
+
 const CharLimit = 2000;
 
+
+/**
+ * A collection of common tools used in command modules
+ * @module cmdTools
+ */
 module.exports = {
 
-    //Input: message, Output: string
-    //Removes @ mention and ! command from message and returns the message string
-    StripMessage: function(message){
+    /**
+     * Remove command from Discord message conetent
+     * @param {Message} message 
+     * @returns {string} Discord message content without !command
+     */
+    StripCommand: function(message){
         let temp = message.content;
-        //Remove @ mention from message
         temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
-        //Remove command from Message
-        temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
-
         return temp;
     },
 
+    /**
+     * Gets command from Discord message conetent
+     * @param {Message} message 
+     * @returns {string} Command
+     */
     GetCommand: function(message){
         let command = message.content;
-
-        //Remove @ mention from message
-        command = command.replace(command.substring(0, command.indexOf(" ")+1), "");
 
         if(command.indexOf(" ") !== -1)
         {
@@ -27,58 +35,21 @@ module.exports = {
         return command;
     },
 
-
-    //Returns 0, 1, or -1
-    //0: Command not found
-    //1: Found and processed command
-    //-1: Found but could not process command
-    CheckPermissions: function(message, command, commands){
-
-        //Check if this module has requested command
-        if(commands[command])
-        {
-            //(Module is not admin only or module is admin only and user is admin) and has required roles for module
-            if((!commands.adminOnly || (commands.adminOnly && message.member.permissions.has('ADMINISTRATOR')))
-                && (!commands.roles.length > 0 || message.member.roles.some(role=>commands.roles.includes(role.name))))
-            {
-                //(command is not admin only or command is admin only and user is admin) and has required roles for command
-                if((!commands[command].adminOnly || (commands[command].adminOnly && message.member.permissions.has('ADMINISTRATOR')))
-                && (!commands[command].roles.length > 0 || message.member.roles.some(role=>commands[command].roles.includes(role.name))))
-                {
-                    //Exit complete
-                    return 1;
-                }
-                else
-                {
-                    //Exit error
-                    this.SendCommandErrorMessage(message, "Sorry " + message.author + "! I can't do that. You don't have permissions to use that command. \n" + 
-                    "You are either missing admin privilages or one of these roles: " + commands[command].roles);
-                    return -1;
-                }
-            }
-            else
-            {
-                //Exit error
-                this.SendCommandErrorMessage(message, "Sorry " + message.author + "! I can't do that. You don't have permissions to use that command. \n" + 
-                "You are either missing admin privilages or one of these roles: [" + commands.roles + "]");
-                return -1;
-            }
-        }
-        else
-        {
-            //Exit continue
-            return 0;
-        }
-    },
-
+    /**
+     * Checks if command requires admin
+     * @param {command} command
+     * @returns {string} Admin prefix for help builder 
+     */
     CheckAdmin: function(command)
     {
         return (command.admin === true) ? "(Admin) " : "";
-        //if(command.admin === true) return "(Admin) ";
-        //return (commands[command].adminOnly) ? "(Admin) " : " ";
     },
 
-    //Move to command tools
+    /**
+     * Formats command roles into string
+     * @param {command} command
+     * @returns {string} Formatted string
+     */
     GetRequiredRoles: function(command)
     {
         let temp = "";
@@ -99,6 +70,11 @@ module.exports = {
         return temp;
     },
 
+    /**
+     * Sends embedded error message to recieved message channel
+     * @param {Message} message 
+     * @param {string} error 
+     */
     SendCommandErrorMessage: function(message, error)
     {
         message.channel.send({
@@ -118,7 +94,12 @@ module.exports = {
         });
     },
 
-    SendCommandSuccessMessage: function(message, success)
+    /**
+     * Sends embedded success message to recieved message channel
+     * @param {Message} message
+     * @param {string} description = The body of the message.
+     */
+    SendCommandSuccessMessage: function(message, description)
     {
         message.channel.send({
             embed: {
@@ -127,7 +108,7 @@ module.exports = {
                     name: "Success",
                     icon_url: 'attachment://icon.png'
                 },
-                description: success,
+                description: description,
             },
             files: [{
                 attachment:'./bot_modules/images/successIcon.png',
@@ -136,7 +117,13 @@ module.exports = {
         });
     },
 
-    SendInfoMessage: function(message, title, info)
+    /**
+     * Sends embedded info message to recieved message channel 
+     * @param {Message} message 
+     * @param {string} title 
+     * @param {string} description - The body of the message.
+     */
+    SendInfoMessage: function(message, title, description)
     {
         message.channel.send({
             embed: {
@@ -146,7 +133,7 @@ module.exports = {
                     icon_url: 'attachment://icon.png'
                 },
                 title: title,
-                description: info,
+                description: description,
             },
             files: [{
                 attachment:'./bot_modules/images/infoIcon.png',
@@ -155,6 +142,16 @@ module.exports = {
         });
     },
 
+    /**
+     * Creates a new command embed field for {@link module:cmdTools#HelpBuilder} HelpBuilder()
+     * @see {@link HelpBuilder}
+     * @param {string} prefix 
+     * @param {moduleSettings} settings 
+     * @param {string} command - The command without the prefix
+     * @param {string} params - Required parameters to run the command. Format: "[param1] [param2] ..." 
+     * @param {string} description - Brief explation of what the command does
+     * @returns {MessageEmbedField} Message embed field
+     */
     CreateCommandField: function(prefix, settings, command, params, description)
     {
         return {
@@ -163,6 +160,11 @@ module.exports = {
         }
     },
 
+    /**
+     * Creates a new whitelist embed field for HelpBuilder()
+     * @param {moduleSettings} settings 
+     * @returns {MessageEmbedField} Message embed field
+     */
     CreateWhitelistField: function(settings)
     {
         listType = settings.listType;
@@ -185,14 +187,28 @@ module.exports = {
         }
     },
 
-    CreateCustomField: function(title, description)
+    /**
+     * Creates a standard embed field with a custom title and description
+     * @param {string} title 
+     * @param {string} description 
+     * @param {boolean} inline
+     * @returns {MessageEmbedField} Message embed field
+     */
+    CreateCustomField: function(title, description, inline)
     {
         return {
             name: title,
-            value: description
+            value: description,
+            inline: inline
         }
     },
 
+    /**
+     * Returns a custom embed for help messages
+     * @param {package} package - A module info package
+     * @param {Object[]} fields - An array of embed fields
+     * @returns {MessageEmbed} Message embed
+     */
     HelpBuilder: function(package, fields)
     {
         return {
@@ -203,7 +219,7 @@ module.exports = {
                     icon_url: 'attachment://thumbnail.png'
                 },
                 title: package.moduleName,
-                description: "v" + package.version + "\n" + package.description,
+                description: "By: " + package.author + " - v" + package.version + "\n" + package.description,
                 fields: fields,
             },
             files: [{
@@ -213,7 +229,11 @@ module.exports = {
         };
     },
 
-    //Untested
+    /**
+     * UNTESTED | Sends a long message as multiple to a channel
+     * @param {string} text 
+     * @param {Channel} channel 
+     */
     SendLongMessage(text, channel)
     {
         let chars = text.length;

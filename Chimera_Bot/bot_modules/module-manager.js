@@ -1,22 +1,18 @@
 const cmdTools = require('./command-tools.js');
-const { cond } = require('lodash');
 
 module.exports = {
 
-    //TO-DO: Create way to set admin and roles for entire module. Will remove override functionality
-
-    //This object is used for testing user permissions and passing the required module to the command bus
     commands : {    
-        "forcesave" : {
-            admin : true, //Applies to only this command.
-            roles : [], //stacks onto parent list for only this command
-        },
         "setconsolechannel" : {
             admin : true,
             roles : [], 
         },
         "setup" : {
             admin : false,
+            roles : [], 
+        },
+        "setprefix" : {
+            admin : true,
             roles : [], 
         },
         "listmodules" : {
@@ -73,9 +69,7 @@ module.exports = {
         },
     },
 
-    //This objet is used for saving module specific data
     settings : {
-        //moduleName: "Manager",
         consoleChannel: "bot-console",
     },
 
@@ -93,17 +87,18 @@ module.exports = {
     {
         cmd = command.substring(command.indexOf(".")+1, command.length)
         switch (cmd) {
-            case "forcesave":
-                
-                break;
             case "setconsolechannel":
-                
-                break;
+                return this.SetConsoleChannel(message, settings);
+
             case "setup":
                 
                 break;
             case "listmodules":
                 return this.ListModules(message, settings);
+            
+            case "setprefix":
+                return this.ListModules(message, settings);
+
             case "installmodule":
                 
                 break;
@@ -111,23 +106,26 @@ module.exports = {
                 
                 break;
             case "setmoduleadmin":
-                
-                break;
+                return this.SetModuleAdmin(message, settings);
+
             case "addmodulerole":
-                
-                break;
+                return this.AddModuleRole(message, settings);
+
             case "removemodulerole":
-                   
-                break;
+                return this.RemoveModuleRole(message, settings);
+
             case "clearmoduleroles":
                    
                 break;
+            case "setcommandadmin":
+                return this.SetCommandAdmin(message, settings);
+                
             case "addcommandrole":
-                
-                break;
+                return this.AddCommandRole(message, settings);
+
             case "removecommandrole":
-                
-                break;
+                return this.RemoveCommandRole(message, settings);
+
             case "clearcommandroles":
                 
                 break;
@@ -151,13 +149,12 @@ module.exports = {
 
     Help: async function(message, settings)
     {
-        let commands = settings.commands;
         let groupId = settings.packages[this.package.moduleName].defGroup;
         message.channel.send(cmdTools.HelpBuilder(this.package,
                 [
                     cmdTools.CreateWhitelistField(settings.settings[this.package.moduleName]),
                     cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.setup`, "", "Get instructions to set me up on a new server."),
-                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.setconsolechannel`, "[channel]", "Set my default commands channel. This channel is only intended for server admins and mods. All modules will have access to this channel."),
+                    cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.setconsolechannel`, "[channel]", "Set my default commands channel. This channel is only intended for server admins and mods. All modules will have access to this channel.\n current console channel: " + settings.settings[this.package.moduleName].consoleChannel),
                     cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.listmodules`, "", "See the full list of my installed modules."),
                     cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.installmodule`, "[module]", "Install a new module for access to more commands."),
                     cmdTools.CreateCommandField(settings.prefix, settings, `${groupId}.uninstallmodule`, "[module]", "Uninstall a module. This will delete any saved data for this module."),
@@ -190,10 +187,10 @@ module.exports = {
 
     /////////////Command Functions/////////////
 
-    //@me !setconsolechannel [channel]
-    SetConsoleChannel: async function(message){
+    //Command: setconsolechannel [channel]
+    SetConsoleChannel: async function(message, settings){
 
-        let channel = cmdTools.StripMessage(message);
+        let channel = cmdTools.StripCommand(message);
 
         if(!message.guild.channels.find(c => c.name === channel))
         {
@@ -201,19 +198,14 @@ module.exports = {
             return;
         }
 
-        let settings = await DataBus.GetGuildSettings(message.guild);;
+        settings.settings[this.package.moduleName].consoleChannel = channel;
 
-        settings.forEach(module => {
-            module.consoleChannel = channel;
-        });
-
-        DataBus.SaveModuleSettings(message.guild, settings);
         cmdTools.SendCommandSuccessMessage(message, message.author + " Set the console channel to '" + channel + "'");
 
-
+        return settings;
     },
 
-    //@me !listmodules
+    //Command: !listmodules
     ListModules: async function(message, settings)
     {
         cmdTools.SendInfoMessage(message, "Installed modules", (() => {
@@ -227,236 +219,254 @@ module.exports = {
         return null;
     },
 
-    //@me !manager.setmoduleadmin [module] [true/false]
-    SetModuleAdmin: function(message)
+    //Command: setmoduleadmin [module] [true/false]
+    SetModuleAdmin: async function(message, settings)
     {
-        let temp = cmdTools.StripMessage(message);
+        let temp = cmdTools.StripCommand(message);
 
-        //Get and remove module from message
         let module = temp.substring(0, temp.indexOf(" "));
-        temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
-        //Remove command from Message
-        let toggle = temp;
-
-        //Check if true/false was supplied
-        if(!(toggle == "true" || toggle == "false"))
-        {
-            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure you specify either true or false. \n\n You said: '" + toggle + "'");
-            return;
-        }
+        let toggle = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
 
         //check if module exists
-        if(!this.commands[module])
-        {
-            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the module exists. \n\n You said: '" + module + "'");
-            return;
+        let foundModule = false;
+        for(let package in settings.packages){
+            if(!foundModule && settings.packages[package].moduleName == module){
+                foundModule = true;
+            }
         }
 
-        this.commands[module].adminOnly = ((toggle === "true") ?  true : false);
-        this.SaveModuleSettings(message.guild);
+        if(!foundModule){
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the module exists. \n\n You said: '" + module + "'");
+            return null;
+        }
+    
+        //Check if true/false was supplied
+        if(!(toggle === "true" || toggle === "false"))
+        {
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure you specify either true or false. \n\n You said: '" + toggle + "'");
+            return null;
+        }
+
+
+        //Set admin
+        for(let command in settings.commands){
+            if(settings.commands[command].parentModule === module){
+                settings.commands[command].admin = (toggle === "true") ? true : false;
+            }
+        }
 
         cmdTools.SendCommandSuccessMessage(message, message.author + " The '" + module + "' module's admin permission was set to '" + toggle + "'");
+        return settings;
     },
 
-    //@me !manager.setcommandadmin [command] [true/false]
-    SetCommandAdmin: function(message)
+    //Command: setcommandadmin [command] [true/false]
+    SetCommandAdmin: function(message, settings)
     {
-        let temp = cmdTools.StripMessage(message);
+        let temp = cmdTools.StripCommand(message);
 
-        //Get and remove command from message
         let command = temp.substring(0, temp.indexOf(" "));
-        temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
-        //Remove command from Message
-        let toggle = temp;
+        let toggle = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
 
         //Check if true/false was supplied
         if(!(toggle == "true" || toggle == "false"))
         {
             cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure you specify either true or false. \n\n You said: '" + toggle + "'");
-            return;
+            return null;
         }
 
-        //check if command exists
-        for(let mod in this.commands){
-            if(this.commands[mod][command])
-            {
-                this.commands[mod][command].adminOnly = ((toggle === "true") ?  true : false);
-                this.SaveModuleSettings(message.guild);
-                //console.log(this.commands[module][command].adminOnly);
+        //Set admin if command exists
+        for(let cmd in settings.commands){
+            if(cmd === command){
+                settings.commands[command].admin = (toggle === "true") ? true : false;
                 cmdTools.SendCommandSuccessMessage(message, message.author + " The '" + command + "' command's admin permission was set to '" + toggle + "'")
-                return;
+                return settings;
             }
         }
 
         cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the command exists. \n\n You said: '" + command + "'");
-        return;
-
-        //console.log((toggle === "true") ?  true : false);
-        
+        return null;  
     },
 
-    //@me !manager.addmodulerole [module] [role]
-    AddModuleRole: function(message)
+    //Command: addmodulerole [module] [role]
+    AddModuleRole: function(message, settings)
     {
-        let temp = cmdTools.StripMessage(message);
+        let temp = cmdTools.StripCommand(message);
 
-        //Get and remove module from message
         let module = temp.substring(0, temp.indexOf(" "));
-        temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
-        //Remove command from Message
-        let role = temp;
+        let role = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
+
+        if(role === ""){
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
+            return null;
+        }
+
+        if(module === ""){
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified module exists. \n\n You said: '" + module + "'");
+            return null;
+        }
 
         //check if module exists
-        if(!this.commands[module])
-        {
-            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified module exists. \n\n You said: '" + module + "'");
-            return;
-        }
-        
-        //Check if role exists
-        if(!message.guild.roles.find(r => r.name === role))
-        {
-            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
-            return;
+        for(let package in settings.packages){
+            if(settings.packages[package].moduleName === module){
+                //check if role exists
+                if(!message.guild.roles.find(r => r.name === role)){
+                    cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
+                    return null;
+                }
+
+                //set module role
+                for(let command in settings.commands){
+                    if(settings.commands[command].parentModule === module){
+                        if(!settings.commands[command].roles.includes(role)){
+                            settings.commands[command].roles.push(role);
+                        }
+                    }
+                }
+
+                cmdTools.SendCommandSuccessMessage(message, message.author + "Added '" + role + "' to the " + module + " module's required roles");
+                return settings;
+            }
         }
 
-        //Check if module already has role
-        if(this.commands[module].roles.includes(role))
-        {
-            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. The specified role already exists in the " + module + " module's list of required roles.\n\n You said: '" + role + "'");
-            return;
-        }
-
-        this.commands[module].roles.push(role);
-        this.SaveModuleSettings(message.guild);
-
-        cmdTools.SendCommandSuccessMessage(message, message.author + "Added '" + role + "' to the " + module + " module's required roles");
+        cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified module exists. \n\n You said: '" + module + "'");
+        return null;
     },
 
-    //@me !manager.removemodulerole [module] [role]
-    RemoveModuleRole: function(message)
+    //Command: removemodulerole [module] [role]
+    RemoveModuleRole: function(message, settings)
     {
-        let temp = cmdTools.StripMessage(message);
+        let temp = cmdTools.StripCommand(message);
 
-        //Get and remove module from message
         let module = temp.substring(0, temp.indexOf(" "));
-        temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
-        //Remove command from Message
-        let role = temp;
+        let role = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
+
+        if(role === ""){
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
+            return null;
+        }
+
+        if(module === ""){
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified module exists. \n\n You said: '" + module + "'");
+            return null;
+        }
 
         //check if module exists
-        if(!this.commands[module])
-        {
-            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified module exists. \n\n You said: '" + module + "'");
-            return;
-        }
-        
-        //Check if role exists
-        if(!message.guild.roles.find(r => r.name === role))
-        {
-            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
-            return;
+        for(let package in settings.packages){
+            if(settings.packages[package].moduleName === module){
+                //check if role exists
+                if(!message.guild.roles.find(r => r.name === role)){
+                    cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
+                    return null;
+                }
+
+                //remove module role
+                for(let command in settings.commands){
+                    if(settings.commands[command].parentModule === module){
+                        if(settings.commands[command].roles.includes(role)){
+                            settings.commands[command].roles.splice(settings.commands[command].roles.indexOf(role), 1);
+                        }
+                    }
+                }
+
+                cmdTools.SendCommandSuccessMessage(message, message.author + "Removed '" + role + "' from the " + module + " module's required roles");
+                return settings;
+            }
         }
 
-        //Check if module does not have role
-        if(!this.commands[module].roles.includes(role))
-        {
-            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. The specified role does not exist in the " + module + " module's list of required roles.\n\n You said: '" + role + "'");
-            return;
-        }
-
-        let index = this.commands[module].roles.indexOf(role);
-        this.commands[module].roles.splice(index,1);
-        this.SaveModuleSettings(message.guild);
-
-        cmdTools.SendCommandSuccessMessage(message, message.author + "Removed '" + role + "' from the " + module + " module's required roles");
+        cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified module exists. \n\n You said: '" + module + "'");
+        return null;
     },
 
-    //@me !manager.addcommandrole [command] [role]
-    AddCommandRole: function(message)
+    //Command: addcommandrole [command] [role]
+    AddCommandRole: function(message, settings)
     {
-        let temp = cmdTools.StripMessage(message);
+        let temp = cmdTools.StripCommand(message);
 
-        //Get and remove command from message
         let command = temp.substring(0, temp.indexOf(" "));
-        temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
-        //get role from message
-        let role = temp;
+        let role = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
+
+        if(role === ""){
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
+            return null;
+        }
+
+        if(command === ""){
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified command exists. \n\n You said: '" + command + "'");
+            return null;
+        }
 
         //Check if role exists
         if(!message.guild.roles.find(r => r.name === role))
         {
             cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
-            return;
+            return null;
         }
+
 
         //Find command
-        for(let module in this.commands){
-            if(this.commands[module][command])
-            {
-                //Check if command already has role
-                if(this.commands[module][command].roles.includes(role))
-                {
+        for(let cmd in settings.commands){
+
+            if(command === cmd){
+                if(settings.commands[cmd].roles.includes(role)){
                     cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. The specified role already exists in the " + command + " command's list of required roles.\n\n You said: '" + role + "'");
-                    return;
+                    return null;
                 }
-                else
-                {
-                    //Add role to command
-                    this.commands[module][command].roles.push(role);
-                    this.SaveModuleSettings(message.guild);
-                    cmdTools.SendCommandSuccessMessage(message, message.author + "Added '" + role + "' to the '" + command + "' command's list of required roles.")
-                    return;
-                }
+
+                settings.commands[cmd].roles.push(role);
+                cmdTools.SendCommandSuccessMessage(message, message.author + "Added '" + role + "' to the '" + command + "' command's list of required roles.")
+                return settings;
             }
         }
 
         //Could not find command
         cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified command exists. \n\n You said: '" + command + "'");
+        return null;
     },
 
     //@me !manager.removecommandrole [command] [role]
-    RemoveCommandRole: function(message)
+    RemoveCommandRole: function(message, settings)
     {
-        let temp = cmdTools.StripMessage(message);
+        let temp = cmdTools.StripCommand(message);
 
-        //Get and remove command from message
         let command = temp.substring(0, temp.indexOf(" "));
-        temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
-        //Get role from message
-        let role = temp;
+        let role = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
+
+        if(role === ""){
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
+            return null;
+        }
+
+        if(command === ""){
+            cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified command exists. \n\n You said: '" + command + "'");
+            return null;
+        }
 
         //Check if role exists
         if(!message.guild.roles.find(r => r.name === role))
         {
             cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified role exists. \n\n You said: '" + role + "'");
-            return;
+            return null;
         }
 
+
         //Find command
-        for(let module in this.commands){
-            if(this.commands[module][command])
-            {
-                //Check if command does not have role
-                if(!this.commands[module][command].roles.includes(role))
-                {
+        for(let cmd in settings.commands){
+
+            if(command === cmd){
+                if(!settings.commands[cmd].roles.includes(role)){
                     cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. The specified role does not exist in the " + command + " command's list of required roles.\n\n You said: '" + role + "'");
-                    return;
+                    return null;
                 }
-                else
-                {
-                    //Add role to command
-                    let index = this.commands[module][command].roles.indexOf(role);
-                    this.commands[module][command].roles.splice(index,1);
-                    this.SaveModuleSettings(message.guild);
-                    cmdTools.SendCommandSuccessMessage(message, message.author + "removed '" + role + "' from the '" + command + "' command's list of required roles.")
-                    return;
-                }
+
+                settings.commands[cmd].roles.splice(settings.commands[cmd].roles.indexOf(role), 1);
+                cmdTools.SendCommandSuccessMessage(message, message.author + " Removed '" + role + "' from the '" + command + "' command's list of required roles.")
+                return settings;
             }
         }
 
         //Could not find command
         cmdTools.SendCommandErrorMessage(message, message.author + " I was unable to do that. Please make sure the specified command exists. \n\n You said: '" + command + "'");
+        return null;
     },
 
     //@me !manager.clearcommandroles [command]

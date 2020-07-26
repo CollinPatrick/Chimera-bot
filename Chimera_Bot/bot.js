@@ -15,7 +15,7 @@ const AllowedPrefix = process.env.ALLOWED_PREFIX;
 require('./dash/endpoint/index.js');
 
 DataBus.Connect();
-CommandManager.PopulateModuleLibrary();
+//CommandManager.PopulateModuleLibrary();
 DataBus.moduleLibrary = commandManager.moduleLibrary;
 
 EventHandler.commonEmitter.on('SaveGuildSettings', function (settings) {
@@ -25,8 +25,6 @@ EventHandler.commonEmitter.on('SaveGuildSettings', function (settings) {
 client.on('error', console.error);
 
 client.on('ready', () => {
-	//ModuleManager.LoadModules(client);
-
     // List servers the bot is connected to
     console.log("Servers:")
     client.guilds.forEach((guild) => {
@@ -52,16 +50,10 @@ client.on('message', async recievedMessage => {
 	}
 
 	CommandManager.ReadMessage(client, recievedMessage);
-
-	//Message Moduels
-	//ModuleManager.ReadMessage(client, recievedMessage);
 })
 
 client.on('guildMemberAdd', member => {
 	console.log(member.username + "joined the server!");
-
-	//New member modules
-	ModuleManager.NewMember(member);
 });
 
 //joined a server
@@ -75,15 +67,5 @@ client.on("guildDelete", guild => {
 	console.log("Left a guild: " + guild.name);
 	CommandManager.LeaveGuild(guild.id);
 })
-
-function setRolesManual(message, user, recievedMessage)
-{
-	let keys = findKeys(recievedMessage);
-	let roles = getRoles(keys)
-	let member = recievedMessage.guild.member(user)
-	setRoles(roles, member, recievedMessage);
-	recievedMessage.channel.send("set " + user + "'s roles to:  " + roles);
-	
-}
 
 client.login(SecretToken)
