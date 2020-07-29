@@ -1,0 +1,98 @@
+{
+    "setconsolechannel" : {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["channel"], 
+        "run": "SetConsoleChannel"
+    },
+    "setup" : {
+        "admin" : true,
+        "roles" : [],
+        "params" : [], 
+        "run": ""
+    },
+    "setprefix" : {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["prefix"], 
+        "run": "" 
+    },
+    "listmodules" : {
+        "admin" : false,
+        "roles" : [],
+        "params" : [], 
+        "run": "ListModules" 
+    },
+    "installmodule" : {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["module"], 
+        "run": "" 
+    },
+    "uninstallmodule" : {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["module"], 
+        "run": "" 
+    },
+    "setmoduleadmin": {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["module", "true/false"], 
+        "run": "SetModuleAdmin" 
+    },
+    "setcommandadmin": {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["command", "true/false"], 
+        "run": "SetCommandAdmin"  
+    },
+    "addmodulerole": {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["module", "role"], 
+        "run": "AddModuleRole"  
+    },
+    "removemodulerole": {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["module", "role"], 
+        "run": "RemoveModuleRole"  
+    },
+    "clearmoduleroles": {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["module"], 
+        "run": "Help"  
+    },
+    "addcommandrole": {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["command", "role"], 
+        "run": "AddCommandRole"  
+    },
+    "removecommandrole": {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["command", "role"], 
+        "run": "RemoveCommandRole"  
+    },
+    "clearcommandroles": {
+        "admin" : true,
+        "roles" : [],
+        "params" : ["command"], 
+        "run": "ClearCommandRoles"
+    },
+    "help" : {
+        "admin" : false,
+        "roles" : [],
+        "params" : [], 
+        "run": "Help"  
+    },
+    "helpall" : {
+        "admin" : true,
+        "roles" : [],
+        "params" : [], 
+        "run": "HelpAll"  
+    }
+}

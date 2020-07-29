@@ -1,0 +1,9 @@
+{
+    "id": 259311378555207680,
+    "moduleName": "Manager",
+    "version": "1.0.0",
+    "author": "Collin Patrick",   
+    "description": "This module contains my core commands and utility setup.",
+    "defGroup": "mgr",
+    "whatsNew": ""
+}

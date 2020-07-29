@@ -4,7 +4,7 @@ require('dotenv').config();
 
 
 const Discord = require('discord.js');
-const ModuleManager = require("./bot_modules/module-manager.js");
+const ModuleManager = require("./bot_modules/modules/manager-259311378555207680/manager.js");
 const EventHandler = require('./bot_modules/event-handler.js');
 const DataBus = require('./bot_modules/databus.js');
 const client = new Discord.Client();
@@ -41,6 +41,11 @@ client.on('message', async recievedMessage => {
 
 	// Prevent bot from responding to its own messages
 	if (recievedMessage.author == client.user) { 
+		return;
+	}
+
+	//Prevent bot from responding to other bots
+	if (recievedMessage.author.bot){
 		return;
 	}
 

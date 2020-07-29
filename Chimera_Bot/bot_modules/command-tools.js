@@ -5,7 +5,7 @@ const CharLimit = 2000;
 
 /**
  * A collection of common tools used in command modules
- * @module cmdTools
+ * @module command-tools
  */
 module.exports = {
 
@@ -16,8 +16,11 @@ module.exports = {
      */
     StripCommand: function(message){
         let temp = message.content;
-        temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
-        return temp;
+        if(temp.indexOf(" ")){
+            temp = temp.replace(temp.substring(0, temp.indexOf(" ")+1), "");
+            return temp;
+        }
+        return "";
     },
 
     /**
@@ -205,11 +208,11 @@ module.exports = {
 
     /**
      * Returns a custom embed for help messages
-     * @param {package} package - A module info package
-     * @param {Object[]} fields - An array of embed fields
+     * @param {package} pkg - A module info package
+     * @param {MessageEmbedField[]} fields - An array of embed fields
      * @returns {MessageEmbed} Message embed
      */
-    HelpBuilder: function(package, fields)
+    HelpBuilder: function(pkg, fields)
     {
         return {
             embed: {
@@ -218,8 +221,8 @@ module.exports = {
                     name: `Help`,
                     icon_url: 'attachment://thumbnail.png'
                 },
-                title: package.moduleName,
-                description: "By: " + package.author + " - v" + package.version + "\n" + package.description,
+                title: pkg.moduleName,
+                description: "By: " + pkg.author + " - v" + pkg.version + "\n" + pkg.description,
                 fields: fields,
             },
             files: [{

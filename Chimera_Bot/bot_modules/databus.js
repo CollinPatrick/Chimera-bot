@@ -3,6 +3,10 @@ const mysql = require("mysql");
 const fetch = require("node-fetch");
 const allowedPrefix = process.env.ALLOWED_PREFIX;
 
+/**
+ * @module core:databus
+ * @exports databus
+ */
 module.exports = {
 
     moduleLibrary: [],
@@ -71,7 +75,7 @@ module.exports = {
 
                 return err ? reject(err) : resolve(guildSettings);
             });
-            return reject(new Error);
+            //return reject(new Error);
         });
     },
 
@@ -304,14 +308,6 @@ module.exports = {
         test.errors.push(`Invalid response: The module '${moduleName}' does not exist.`);
         return test;
     },
-
-    // InstallModule: async function(moduleName, settings){
-    //     cmdManager.InstallModule(moduleName, settings);
-    // },
-
-    // UninstallModule: async function(moduleName, settings){
-    //     cmdManager.UninstallModule(moduleName, settings);
-    // },
 
     //Does not add or remove from saved settings, only overwrites existing fields
     MergeSave: async function(settings, guildID) {

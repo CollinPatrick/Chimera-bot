@@ -1,16 +1,25 @@
-const ModuleManager = require("./module-manager.js");
+const ModuleManager = require("./modules/manager-259311378555207680/manager.js");
 const DataBus = require("./databus.js");
 const cmdTools = require("./command-tools.js");
 const fs = require('fs');
 const EventHandler = require("./event-handler.js");
 const { Message, Client } = require("discord.js");
 
+/**
+ * @module command-manager
+ * @exports command-manager
+ */
 module.exports = {
 
+    /**
+     * A library of all avalible modules
+     * @deprecated
+     */
     moduleLibrary: [],
 
     /**
      * Imports all command modules from the module folder and populates moduleLibrary array
+     * @deprecated
      */
     PopulateModuleLibrary: function() {
         this.moduleLibrary = [];
@@ -33,6 +42,7 @@ module.exports = {
 
     /**
      * Returns an array of all commnad modules
+     * @deprecated
      */
     GetModuleLibrary: function(){
         moduleLibrary = [];
@@ -150,23 +160,35 @@ module.exports = {
             }
         }
 
-        //Get command module
-        let module = this.GetModule(moduleToExecute);
-
         //Get module commands //could merge with earlier loop through commands for efficientcy
         var commands = {};
         for(let command in guildSettings.commands)
         {
             if(guildSettings.commands[command].parentModule === moduleToExecute)
             {
-                //commandName = command.substring(command.indexOf(".")+1, command.length);
                 commands[command] = guildSettings.commands[command];
+            }
+        }
+
+        let params = this.ParseParams(message, guildSettings.commands[command].params);
+        
+        //check for undefined params
+        for(let param in params){
+            if(params[param] === undefined || params[param] === ""){
+                cmdTools.SendCommandErrorMessage(message, "Unable to process command. One or more parameters are missing!");
+                return;
             }
         }
 
         //Not manager - run command with module settings
         if(moduleToExecute !== ModuleManager.package.moduleName)
         {
+            //Get module id
+            let id = `${moduleToExecute}-${guildSettings.packages[moduleToExecute].id}`;
+
+            //Get command module
+            let module = this.GetModule(id, `${moduleToExecute}.js`);
+
             //Build module specific settings
             let moduleSettings = {
                 settings: guildSettings.settings[moduleToExecute],
@@ -176,7 +198,14 @@ module.exports = {
             }
 
             //Run command - return object or null
-            let updatedSettings = await module.Run(message, command, moduleSettings);
+            let updatedSettings;
+            try {
+                updatedSettings = await module[commands[command]["run"]](message, params, moduleSettings);
+            }
+            catch(error){
+                console.log("Command function does not exist!");
+            }
+            // let updatedSettings = await module.Run(message, command, params, moduleSettings);
 
             //Changes returned from module
             if(updatedSettings !== null)
@@ -189,7 +218,13 @@ module.exports = {
         else //Is manager - run command with full guild settings
         {
             //Run command
-            let updatedSettings = await module.Run(message, command, guildSettings);
+            let updatedSettings;
+            try{
+                updatedSettings = await ModuleManager[commands[command]["run"]](message, params, guildSettings)
+            } 
+            catch(error){
+                console.log("Command function does not exist!");
+            }
 
             //Changes returned from module
             if(updatedSettings !== null && updatedSettings !== undefined)
@@ -206,6 +241,66 @@ module.exports = {
 
     },
 
+    /**
+     * Retrieves parameters from a command.
+     * @param {Message} message - Discord message object.
+     * @param {string[]} params - Array of command parameters.
+     * @returns {object}
+     */
+    ParseParams: function(message, params){
+
+        if (params.length < 1){
+            return {};
+        }
+
+        let content = message.content;
+        if(content.indexOf(" ") !== -1){
+            content = content.replace(content.substring(0, content.indexOf(" ")), "");
+        }
+        else{
+            content = "";
+        }
+        
+        let paramObj = {};
+
+        //remove leading space
+        if(content[0] === " "){
+            content = content.substring(1, content.length);
+        }
+
+        //get raw params
+        let paramList = content.split("-");
+
+        //Remove empty param if it exists
+        if(paramList[0] === ""){
+            paramList.splice(0,1);
+        }
+
+        for(let param in params){
+            let temp = paramList[param];
+            if(temp === "" || temp === undefined){
+                //No param
+                paramObj[params[param]] = undefined;
+            }
+            else{
+                //Remove leading and trailing spaces
+                if(temp[0] === " "){
+                    temp = temp.substring(1, temp.length-1);
+                }
+                if(temp[temp.length-1] === " "){
+                    temp = temp.substring(0, temp.length-1);
+                }
+                //Add parsed param
+                paramObj[params[param]] = temp;
+            }
+        }
+        return paramObj;
+    },
+
+    /**
+     * Adds guild to database and installs manager module.
+     * @param {string} guildID - Discord guild object id. 
+     */
     JoinGuild: async function(guildID)
     {   
         //Get default manager settings
@@ -241,48 +336,63 @@ module.exports = {
 
         let guildSettings = await DataBus.GetGuildSettings(guildID);
 
-        this.InstallModule("Template", guildSettings);
+        this.InstallModule("template-259311378555207680", guildSettings);
     },
 
+    /**
+     * Deletes guild data from database
+     * @param {string} guildID - Discord guild object id
+     */
     LeaveGuild: function (guildID)
     {
         //remove guild settings entry for from database TO-DO: Move to databus
         DataBus.database.query(`DELETE FROM guildSettings WHERE id = '${guildID}'`);
     },
 
-    GetModuleCopy: function(moduleName)
+    /**
+     * Returns a copy of a Chimera module matching the provided ID.
+     * This is used for installing modules.
+     * @param {string} moduleID - The name of the module and it's id separated with a dash. EX: "manager-123"  
+     * @returns {object} Copy of a Chimera module
+     */
+    GetModuleCopy: function(moduleID)
     {
-        for(let i = 0; i < this.moduleLibrary.length; i++) //always returns null without normal for loop. Don't know why
-        {
-            //Check if supplied module name matches library module
-            if(this.moduleLibrary[i].package.moduleName === moduleName)
-            {
-                //return deep copy of module without functions
-                return JSON.parse(JSON.stringify(this.moduleLibrary[i]));
+        let normalizedPath = require("path").join(__dirname, `modules/${moduleID}/`);
+        let module = null;
+        fs.readdirSync(normalizedPath).forEach(file =>{
+            if(file === "package.json"){
+                let pkg = require(`./modules/${moduleID}/${file}`);
+                module = require(`./modules/${moduleID}/${pkg.moduleName}.js`);
             }
-        }
-
-        return null;
+        });
+        return (JSON.parse(JSON.stringify(module)));
     },
 
-    GetModule: function(moduleName)
+    /**
+     * Returns the Chimera module matching the provided id and file name.
+     * This is used for running commands.
+     * @param {string} moduleID - The name of the module and it's id separated with a dash. EX: "manager-123" 
+     * @param {string} fileName - The name of a module as a .js file EX: "manager.js" 
+     * @returns {object} A Chimera module
+     */
+    GetModule: function(moduleID, fileName)
     {
-        for(let i = 0; i < this.moduleLibrary.length; i++)
-        {
-            //Check if supplied module name matches library module
-            if(this.moduleLibrary[i].package.moduleName === moduleName)
-            {
-                //return module
-                return this.moduleLibrary[i];
+        let normalizedPath = require("path").join(__dirname, `modules/${moduleID}/`);
+        let module = null;
+        fs.readdirSync(normalizedPath).forEach(file =>{
+            if(file === fileName){
+                module = require(`./modules/${moduleID}/${file}`);
+                return;
             }
-        }
+        });
 
-        return null;
+        return module;
     },
 
-    InstallModule: async function (moduleName, settings)
+    InstallModule: async function (moduleID, settings)
     {
-        const moduleToInstall = this.GetModuleCopy(moduleName);
+        const moduleToInstall = this.GetModuleCopy(moduleID);
+        console.log(moduleToInstall);
 
         //check if requested module exists
         if(moduleToInstall === null || moduleToInstall === undefined)
@@ -343,12 +453,12 @@ module.exports = {
 
         //check if requested module is installed, delete if found
         let foundPkg = false;
-        for(let package in settings.packages)
+        for(let pkg in settings.packages)
         {
-            if(settings.packages[package]["moduleName"] === moduleName)
+            if(settings.packages[pkg]["moduleName"] === moduleName)
             {
                 foundPkg = true;
-                delete settings.packages[package];
+                delete settings.packages[pkg];
             }
         }
 
